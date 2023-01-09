@@ -29,9 +29,12 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
   var isProgress: Bool! = false;
   var eventName: String! = "";
   var message: String? = "";
-
+  var shouldSkipFrames: Bool! = true;
+  var videoWritingSessionHasStarted: Bool! = false;
 
   var myResult: FlutterResult?
+
+  
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "ed_screen_recorder", binaryMessenger: registrar.messenger())
@@ -40,7 +43,14 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    if(call.method == "startRecordScreen"){
+    if(call.method == "pauseRecordScreen"){
+      shouldSkipFrames = true;
+      videoWritingSessionHasStarted = false;
+    } else if(call.method == "resumeRecordScreen"){
+      videoWritingSessionHasStarted = false;
+      shouldSkipFrames = false;
+    } else if(call.method == "startRecordScreen"){
+        videoWritingSessionHasStarted = false;
         let args = call.arguments as? Dictionary<String, Any>
         self.isAudioEnabled=((args?["audioenable"] as? Bool?)! ?? false)!
         self.fileName=(args?["filename"] as? String)!+".mp4"
@@ -185,12 +195,16 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
                     (cmSampleBuffer, rpSampleType, error) in guard error == nil else {
                             return;
                     }
-                    switch rpSampleType {
+                    if (self.shouldSkipFrames == false) {
+                        switch rpSampleType {
                         case RPSampleBufferType.video:
                             if self.videoWriter?.status == AVAssetWriter.Status.unknown {
                                 self.videoWriter?.startWriting()
-                                self.videoWriter?.startSession(atSourceTime:  CMSampleBufferGetPresentationTimeStamp(cmSampleBuffer));
-                            }else if self.videoWriter?.status == AVAssetWriter.Status.writing {
+                            } else if self.videoWriter?.status == AVAssetWriter.Status.writing {
+                                if (self.videoWritingSessionHasStarted == false) {
+                                    self.videoWriter?.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(cmSampleBuffer));
+                                    self.videoWritingSessionHasStarted = true;
+                                }
                                 if (self.videoWriterInput?.isReadyForMoreMediaData == true) {
                                     if  self.videoWriterInput?.append(cmSampleBuffer) == false {
                                         print("Problems writing video")
@@ -201,16 +215,18 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
                             }
                             case RPSampleBufferType.audioMic:
                                 if(self.isAudioEnabled){
-                                    if self.audioInput?.isReadyForMoreMediaData == true {
-                                            print("starting audio....");
-                                        if self.audioInput?.append(cmSampleBuffer) == false {
+                                    if (self.audioInput?.isReadyForMoreMediaData == true) {
+                                        if (self.videoWritingSessionHasStarted == true) {
+                                            if self.audioInput?.append(cmSampleBuffer) == false {
                                             print("Problems writing audio")
+                                            }
                                         }
                                     }
                                 }
                             default:
                             break;
                     }
+                }
                 }){(error) in guard error == nil else {
                         print("Screen record not allowed");
                         return
