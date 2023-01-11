@@ -47,6 +47,19 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
       shouldSkipFrames = true;
       videoWritingSessionHasStarted = false;
     } else if(call.method == "resumeRecordScreen"){
+        // There must be an active AV session for this to be function
+        // For example the flutter app playing sound
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.multiRoute, options: .mixWithOthers)
+        } catch {
+            print(error)
+        }
+        do {
+            try audioSession.setActive(true)
+        } catch  {
+            print(error)
+        }
       videoWritingSessionHasStarted = false;
       shouldSkipFrames = false;
     } else if(call.method == "startRecordScreen"){
@@ -93,7 +106,7 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
         myResult = result
 
     }else if(call.method == "stopRecordScreen"){
-        
+
         if(videoWriter != nil){
             self.success=Bool(stopRecording())
             self.filePath=NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as NSString
@@ -103,6 +116,21 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
         }else{
             self.success=Bool(false)
         }
+
+        // There must be an active AV session for this to be function
+        // For example the flutter app playing sound
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.playback, options: .mixWithOthers)
+        } catch {
+            print(error)
+        }
+        do {
+            try audioSession.setActive(true)
+        } catch  {
+            print(error)
+        }
+
         myResult = result
     }
       struct JsonObj : Codable {
@@ -165,7 +193,7 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
             return  Bool(false)
         }
         if #available(iOS 11.0, *) {
-            recorder.isMicrophoneEnabled = isAudioEnabled
+            recorder.isMicrophoneEnabled = false;
             let videoSettings: [String : Any] = [
                 AVVideoCodecKey  : AVVideoCodecType.h264,
                 AVVideoWidthKey  : NSNumber.init(value: width),
@@ -218,8 +246,18 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
                                     if (self.audioInput?.isReadyForMoreMediaData == true) {
                                         if (self.videoWritingSessionHasStarted == true) {
                                             if self.audioInput?.append(cmSampleBuffer) == false {
-                                            print("Problems writing audio")
+                                            print("Problems writing mic audio")
                                             }
+                                        }
+                                    }
+                                }
+                            case RPSampleBufferType.audioApp:
+                                if(self.isAudioEnabled){
+                                    if (self.audioInput?.isReadyForMoreMediaData == true) {
+                                        if (self.videoWritingSessionHasStarted == true) {
+                                            if self.audioInput?.append(cmSampleBuffer) == false {
+                                            print("Problems writing app audio")
+                                          }
                                         }
                                     }
                                 }
@@ -259,10 +297,6 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
             }
 
             self.videoWriter?.finishWriting {
-                print("Finished writing video");
-                PHPhotoLibrary.shared().performChanges({
-                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoOutputURL!)
-                })
                 self.message="stopRecordScreenFromApp"
             }
         }else{
