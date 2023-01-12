@@ -193,7 +193,7 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
             return  Bool(false)
         }
         if #available(iOS 11.0, *) {
-            recorder.isMicrophoneEnabled = false;
+            recorder.isMicrophoneEnabled = true;
             let videoSettings: [String : Any] = [
                 AVVideoCodecKey  : AVVideoCodecType.h264,
                 AVVideoWidthKey  : NSNumber.init(value: width),
