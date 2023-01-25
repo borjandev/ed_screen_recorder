@@ -244,9 +244,11 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
 
             self.videoWriter?.finishWriting {
                 print("Finished writing video");
-                PHPhotoLibrary.shared().performChanges({
-                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoOutputURL!)
-                })
+                if self.videoOutputURL!.lastPathComponent.hasSuffix("gallery.mp4") {
+                    PHPhotoLibrary.shared().performChanges({
+                        PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoOutputURL!)
+                    })
+                }
                 self.message="stopRecordScreenFromApp"
             }
         }else{
