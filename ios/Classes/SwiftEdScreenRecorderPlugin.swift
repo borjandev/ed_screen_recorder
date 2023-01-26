@@ -236,10 +236,15 @@ public class SwiftEdScreenRecorderPlugin: NSObject, FlutterPlugin {
                 res = Bool(false)
                 self.message="You dont Support this plugin"
             }
-
-            self.videoWriterInput?.markAsFinished();
+            
+            if (self.videoWriterInput?.isReadyForMoreMediaData == true) {
+                self.videoWriterInput?.markAsFinished();
+            }
+            
             if(self.isAudioEnabled) {
-                self.audioInput?.markAsFinished();
+                if (self.audioInput?.isReadyForMoreMediaData == true) {
+                    self.audioInput?.markAsFinished();
+                }
             }
             
             if (self.videoWriter?.status == .writing) {
