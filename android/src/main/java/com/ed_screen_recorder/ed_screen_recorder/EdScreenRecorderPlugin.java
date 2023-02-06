@@ -147,10 +147,7 @@ public class EdScreenRecorderPlugin implements FlutterPlugin, ActivityAware, Met
         } else if (call.method.equals("resumeRecordScreen")) {
             hbRecorder.resumeScreenRecording();
         } else if (call.method.equals("stopRecordScreen")) {
-            Map<Object, Object> dataMap = new HashMap<Object, Object>();
             hbRecorder.stopScreenRecording();
-            JSONObject jsonObj = new JSONObject(dataMap);
-            result.success(jsonObj.toString());
         } else {
             result.notImplemented();
         }
