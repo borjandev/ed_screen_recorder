@@ -163,6 +163,18 @@ public class EdScreenRecorderPlugin implements FlutterPlugin, ActivityAware, Met
                         hbRecorder.startScreenRecording(data, resultCode, activity);
                     }
                 }
+            } else {
+                 Map<Object, Object> dataMap = new HashMap<Object, Object>();
+                dataMap.put("success", false);
+                dataMap.put("isProgress", false);
+                dataMap.put("file", "");
+                dataMap.put("eventname", "startRecordScreen Error");
+                dataMap.put("message", "permission denied");
+                dataMap.put("videohash", videoHash);
+                dataMap.put("startdate", startDate);
+                dataMap.put("enddate", endDate);
+                JSONObject jsonObj = new JSONObject(dataMap);
+                flutterResult.success(jsonObj.toString());
             }
         }
         return true;
